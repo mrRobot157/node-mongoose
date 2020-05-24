@@ -1,6 +1,5 @@
 const express = require('express')
 const bodyParser = require('body-parser')
-const mongoose = require('mongoose')
 
 const Dishes = require('../models/dishes')
 
@@ -27,7 +26,6 @@ dishRouter.route('/')
         res.json(dish)
       }, (err) => next(err))
       .catch((err) => next(err))
-
   })
   .put((req, res, next) => {
     res.statusCode = 403
@@ -115,7 +113,6 @@ dishRouter.route('/:dishId/comments')
         }
       }, (err) => next(err))
       .catch((err) => next(err))
-
   })
   .put((req, res, next) => {
     res.statusCode = 403
