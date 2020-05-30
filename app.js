@@ -29,40 +29,51 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser('12345-67890-09876-54321'));
 
 function auth(req, res, next) {
-  console.log('before\n', req.headers);
+  console.log(req.signedCookies);
 
-  let authHeaders = req.headers.authorization
-  console.log(authHeaders)
+  if (!req.signedCookies.user) {
+    let authHeaders = req.headers.authorization
+    console.log(authHeaders)
 
-  console.log('after\n', req.headers)
+    if (!authHeaders) {
+      let err = new Error('You are not authenticated!')
 
-  if (!authHeaders) {
-    let err = new Error('You are not authenticated!')
+      res.setHeader('WWW-Authenticate', 'Basic')
+      console.log('after\n', req.headers)
+      err.status = 401
+      return next(err)
+    }
 
-    res.setHeader('WWW-Authenticate', 'Basic')
-    console.log('after\n', req.headers)
-    err.status = 401
-    return next(err)
+    let authData = new Buffer.from(authHeaders.split(' ')[1], 'base64').toString().split(':')
+
+    let username = authData[0]
+    let password = authData[1]
+
+    if (username === 'admin' && password === 'password') {
+      res.cookie('user', 'admin', {signed: true})
+      next()
+    }
+
+    else {
+      let err = new Error('You are not authenticated!')
+
+      res.setHeader('WWW-Authenticate', 'Basic')
+      err.status = 401
+      return next(err)
+    }
   }
-
-  let authData = new Buffer(authHeaders.split(' ')[1], 'base64').toString().split(':')
-
-  let username = authData[0]
-  let password = authData[1]
-
-  if (username === 'admin' && password === 'password') {
-    next()
-  }
-
   else {
-    let err = new Error('You are not authenticated!')
-
-    res.setHeader('WWW-Authenticate', 'Basic')
-    err.status = 401
-    return next(err)
+    if (req.signedCookies.user === 'admin') {
+      next()
+    }
+    else {
+      let err = new Error('You are not authenticated!')
+      err.status = 401
+      return next(err)
+    }
   }
 }
 
