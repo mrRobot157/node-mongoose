@@ -7,7 +7,7 @@ let session = require('express-session')
 let FileStore = require('session-file-store')(session)
 
 var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var userRouter = require('./routes/userRouter');
 const dishRouter = require('./routes/dishRouter')
 const leaderRouter = require('./routes/leaderRouter')
 const promoRouter = require('./routes/promoRouter')
@@ -44,54 +44,29 @@ function auth(req, res, next) {
   console.log(req.session);
 
   if (!req.session.user) {
-    let authHeaders = req.headers.authorization
-    console.log(authHeaders)
-
-    if (!authHeaders) {
-      let err = new Error('You are not authenticated!')
-
-      res.setHeader('WWW-Authenticate', 'Basic')
-      console.log('after\n', req.headers)
-      err.status = 401
-      return next(err)
-    }
-
-    let authData = new Buffer.from(authHeaders.split(' ')[1], 'base64').toString().split(':')
-
-    let username = authData[0]
-    let password = authData[1]
-
-    if (username === 'admin' && password === 'password') {
-      req.session.user = 'admin'
-      next()
-    }
-
-    else {
-      let err = new Error('You are not authenticated!')
-
-      res.setHeader('WWW-Authenticate', 'Basic')
-      err.status = 401
-      return next(err)
-    }
+    var err = new Error('You are not authenticated!');
+    err.status = 403;
+    return next(err);
   }
   else {
-    if (req.session.user === 'admin') {
-      next()
+    if (req.session.user === 'authenticated') {
+      next();
     }
     else {
-      let err = new Error('You are not authenticated!')
-      err.status = 401
-      return next(err)
+      var err = new Error('You are not authenticated!');
+      err.status = 403;
+      return next(err);
     }
   }
 }
+
+app.use('/', indexRouter);
+app.use('/users', userRouter);
 
 app.use(auth)
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use('/dishes', dishRouter)
 app.use('/leaders', leaderRouter)
 app.use('/promotions', promoRouter)
